@@ -1,0 +1,16 @@
+[
+    {
+        "id": "511e8203-57d0-4382-8e45-3318ff633e14",
+        "parentDirId": "854a2496-0cac-4ef6-b913-ea45a328fdfb",
+        "username": "indranil",
+        "email": "indranil@gmail.com",
+        "password": "7863"
+    },
+    {
+        "id": "2af0ca96-d4d0-4559-a9be-7f9dfa9e1dc5",
+        "parentDirId": "9356a182-049e-44ca-8e59-ad01b3951767",
+        "username": "rohit",
+        "email": "rohit@gmail.com",
+        "password": "1234"
+    }
+]
