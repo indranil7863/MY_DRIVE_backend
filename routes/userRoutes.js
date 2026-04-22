@@ -3,57 +3,57 @@ import userData from "../userDB.json" with { type: "json" };
 import directoryDB from "../foldersDB.json" with { type: "json" };
 import fs, { writeFile } from "fs/promises";
 import CheckAuth from "../Auth.js";
+import { Db, ObjectId } from "mongodb";
 const router = express.Router();
 
 router.post("/register", async (req, res, next) => {
   const { name, email, password } = req.body;
-  const userExist = userData.find((user) => user.email === email);
+  const db = req.db;
+  const dirId = new ObjectId();
+  const userId = new ObjectId();
+
+  try {
+  const userExist = await db.collection("users").findOne({email})
   if (userExist) {
     return res.status(209).json({ error: "email already exists!" });
   }
-  const dirId = crypto.randomUUID();
-  const userId = crypto.randomUUID();
-  // create user and it's corresponding parentDirectroy
-  directoryDB.push({
-    id: dirId,
-    userid: userId,
-    name: "root",
-    parentDir: null,
-    files: [],
-    directories: [],
-  });
 
-  userData.push({
-    id: userId,
-    parentDirId: dirId,
-    username: name,
-    email,
-    password,
-  });
+  const rootDirid = await db.collection("directories").insertOne({_id:dirId, userId, dirname:"root", parentDirId: null})
 
-  try {
-    await writeFile("./foldersDB.json", JSON.stringify(directoryDB));
-    await writeFile("./userDB.json", JSON.stringify(userData));
-    return res.status(200).json("registration successful");
+  const newuser = await db.collection("users").insertOne({_id:userId, parentDirId: dirId, username: name, email, password});
+
+  if(rootDirid.acknowledged && newuser.acknowledged){
+      return res.status(200).json("registration successful");
+   }else{
+      return res.status(201).json("unable to register");
+   }
+    
   } catch (error) {
     next(error);
     return res.status(201).json("unable to register");
   }
 });
 
-router.post("/signin", (req, res) => {
+router.post("/signin", async(req, res) => {
   const { email, password } = req.body;
-  const userdata = userData.find((user) => user.email === email);
+  const db = req.db;
 
-  if (!userdata || userdata.password !== password) {
+  try {
+     const userdata = await db.collection("users").findOne({email, password});
+     if (!userdata) {
     return res.status(201).json({ message: "invalid Credentials!" });
   }
-  res.cookie("uid", userdata.id, {
+  console.log()
+  res.cookie("uid", userdata._id.toString(), {
     sameSite: "none",
     secure: true,
     httpOnly: true,
   });
   return res.status(200).json({ message: "successfully signin!" });
+  } catch (error) {
+    return res.status(201).json({message: "invalid Credentials!"});
+  }
+  
 });
 
 router.post("/logout", CheckAuth, (req, res) => {
@@ -67,8 +67,8 @@ router.post("/logout", CheckAuth, (req, res) => {
 });
 
 router.get("/profile", CheckAuth, (req, res) => {
-  // const userdata = req.user;
-  res.status(200).json({ username: req.user.username });
+
+  res.status(200).json({ username: req.user.username, email: req.user.email });
 });
 
 export default router;
