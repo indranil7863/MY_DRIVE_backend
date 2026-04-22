@@ -3,6 +3,7 @@ import { ObjectId } from "mongodb";
 export default async function CheckAuth(req, res, next) {
   const { uid } = req.cookies;
   const db = req.db;
+  
   if(!uid){
     return res.status(401).json({message: "Unauthorized"});
   }

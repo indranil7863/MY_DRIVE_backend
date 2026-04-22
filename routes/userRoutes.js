@@ -1,7 +1,4 @@
 import express from "express";
-import userData from "../userDB.json" with { type: "json" };
-import directoryDB from "../foldersDB.json" with { type: "json" };
-import fs, { writeFile } from "fs/promises";
 import CheckAuth from "../Auth.js";
 import { Db, ObjectId } from "mongodb";
 const router = express.Router();
