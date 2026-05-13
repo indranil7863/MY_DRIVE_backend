@@ -2,6 +2,8 @@ import { ObjectId } from "mongodb";
 import { createWriteStream } from "fs";
 import { rm } from "fs/promises";
 import path from "path";
+import mime from "mime-types";
+
 
 export const createFile = async(req, res, next) => {
   const { filename } = req.params;
@@ -18,11 +20,13 @@ export const createFile = async(req, res, next) => {
       : req.headers.parentdirid;
  
   const extension = path.extname(filename);
+  const fileType = mime.lookup(filename)
   const filedata = await db.collection("files").insertOne({
     parentDirId: new ObjectId(parentDirId),
     userId: userdata._id,
     fileName: filename,
-    extension: extension
+    extension: extension,
+    fileType: fileType
   })
 
   if(!filedata)return res.status(400).json({message: "Internal server error!"});
@@ -88,4 +92,27 @@ export const deleteFile = async (req, res, next) => {
     next(error);
     console.log("Error: ", error.message);
   }
+}
+
+export const viewAndDownload = async (req, res) => {
+  const { id } = req.params;
+  const db = req.db;
+  const userdata = req.user;
+
+  const fileData = await db.collection("files").findOne({_id: new ObjectId(id), userId: userdata._id })
+  console.log("Fetched data: ", fileData);
+
+  if (req.query.action === "download") {
+    res.set("Content-Disposition", "attachment");
+  }
+ // for view 
+
+  const filetype = mime.lookup(fileData.fileName);
+  console.log("FileType: ", filetype)
+  res.set("Content-Type", filetype);
+  res.sendFile(`${process.cwd()}/storage/${id}${fileData.extension}`, (err) => {
+    if (err) {
+      res.json({ error: "File not found" });
+    }
+  });
 }

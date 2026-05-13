@@ -6,8 +6,10 @@ import fileRoutes from "./routes/fileRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import CheckAuth from "./Auth.js";
 import {connectDB} from "./utils/db.js"
+import dotenv from 'dotenv'
+dotenv.config();
 
-
+const port = process.env.PORT || 7000;
 try {
 const db = await connectDB();
 
@@ -35,8 +37,8 @@ app.use("/directory", CheckAuth, directoryRoutes);
 app.use("/files", CheckAuth, fileRoutes);
 app.use("/user", userRoutes);
 
-app.listen(4000, () => {
-  console.log("Server is live!");
+app.listen(port, () => {
+  console.log("Server is live! on port: ", port);
 });
 
 

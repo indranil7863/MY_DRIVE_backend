@@ -6,7 +6,7 @@ export const getParentDirData = async (req, res) => {
   // if any id is not send from frontend-> i.e root directory
   const { uid } = req.cookies;
   const db = req.db;
- 
+
  if(!req.user.parentDirId){
     return res.status(201).json({message: "directory doesn't exist"});
  } 
@@ -27,8 +27,8 @@ export const getDirData = async (req, res) => {
   if(dirData.userId.toString() !== uid ){
       return res.status(201).json({"message": "You can't access this directory!"});
   }
-   const directoriesData = await db.collection("directories").find({parentDirId: req.user.parentDirId, userId: req.user._id }).toArray()
-   const filesData = await db.collection("files").find({parentDirId: req.user.parentDirId, userId: req.user._id }).toArray();
+   const directoriesData = await db.collection("directories").find({parentDirId: new ObjectId(id), userId: req.user._id }).toArray()
+   const filesData = await db.collection("files").find({parentDirId: new ObjectId(id), userId: req.user._id }).toArray();
  
   return res.json({  files:filesData, directories: directoriesData });
 }
@@ -131,4 +131,4 @@ export const deleteDirectory = async (req, res) => {
   return res.json({message: "Directory deleted successfully!"});
 
 }
-
+  
