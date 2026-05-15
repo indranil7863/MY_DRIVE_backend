@@ -13,7 +13,7 @@ export const Register = async (req, res, next) => {
 
   try {
   const userExist = await db.collection("users").findOne({email: email})
-  console.log(userExist);
+  
   if (userExist) {
     return res.status(209).json({ error: "email already exists!" });
   }
@@ -72,7 +72,7 @@ export const verifyOtp = async(req, res, next)=>{
   
 }
 
-export const SignIn = async(req, res) => {
+export const SignIn = async(req, res, next) => {
   const { email, password } = req.body;
   const db = req.db;
 
@@ -89,7 +89,8 @@ export const SignIn = async(req, res) => {
   });
   return res.status(200).json({ message: "successfully signin!" });
   } catch (error) {
-    return res.status(201).json({message: "invalid Credentials!"});
+    next(error);
+    console.log("Error: ", error.message);
   }
   
 }

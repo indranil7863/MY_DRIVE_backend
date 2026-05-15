@@ -94,12 +94,13 @@ export const deleteFile = async (req, res, next) => {
   }
 }
 
-export const viewAndDownload = async (req, res) => {
+export const viewAndDownload = async (req, res, next) => {
   const { id } = req.params;
   const db = req.db;
   const userdata = req.user;
 
-  const fileData = await db.collection("files").findOne({_id: new ObjectId(id), userId: userdata._id })
+  try {
+    const fileData = await db.collection("files").findOne({_id: new ObjectId(id), userId: userdata._id })
   console.log("Fetched data: ", fileData);
 
   if (req.query.action === "download") {
@@ -109,10 +110,21 @@ export const viewAndDownload = async (req, res) => {
 
   const filetype = mime.lookup(fileData.fileName);
   console.log("FileType: ", filetype)
-  res.set("Content-Type", filetype);
-  res.sendFile(`${process.cwd()}/storage/${id}${fileData.extension}`, (err) => {
-    if (err) {
-      res.json({ error: "File not found" });
+  res.setHeader("Content-Type", filetype);
+  const filePath = path.join(process.cwd(), "storage", `${id}${fileData.extension}`)
+
+  res.sendFile(filePath, (err)=>{
+    if(err){
+      console.log(err)
     }
-  });
+    if(!res.headersSent){
+      return res.status(404).json({error: "File not found"})
+    }
+  }
+  );
+  } catch (error) {
+    next(error)
+    console.log("Error: ", error.message);
+  }
+
 }
