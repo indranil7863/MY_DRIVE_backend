@@ -1,31 +1,75 @@
 
 import { ObjectId } from "mongodb";
+import { generateOtp } from "../utils/generateOtp.js";
+import { sendEmail } from "../utils/sendEmail.js";
+import jwt from 'jsonwebtoken'
+import dotenv from 'dotenv';
+dotenv.config();
+
+
 export const Register = async (req, res, next) => {
   const { name, email, password } = req.body;
   const db = req.db;
-  const dirId = new ObjectId();
-  const userId = new ObjectId();
 
   try {
-  const userExist = await db.collection("users").findOne({email})
+  const userExist = await db.collection("users").findOne({email: email})
+  console.log(userExist);
   if (userExist) {
     return res.status(209).json({ error: "email already exists!" });
   }
 
-  const rootDirid = await db.collection("directories").insertOne({_id:dirId, userId, dirname:"root", parentDirId: null})
+  // generate otp
+  const {otp, token} = generateOtp(email, name , password);
+  // send otp
+  const isEmailSent = sendEmail(email, otp);
+  
+  if(!isEmailSent){
+    throw new Error("Unable to send Email!");
+  }
+  //send token
+  res.cookie("token", token, {
+    sameSite: "none",
+    httpOnly: true,
+    secure: true
+  })
 
-  const newuser = await db.collection("users").insertOne({_id:userId, parentDirId: dirId, username: name, email, password});
-
-  if(rootDirid.acknowledged && newuser.acknowledged){
-      return res.status(200).json("registration successful");
-   }else{
-      return res.status(201).json("unable to register");
-   }
+  res.status(200).json({message: "Otp send successfully!"});
     
   } catch (error) {
     next(error);
     console.log("Error: ", error.message);
   }
+}
+
+export const verifyOtp = async(req, res, next)=>{
+    const {token }= req.cookies;
+    const {otp} = req.body;
+    const db = req.db;
+    const dirId = new ObjectId();
+    const userId = new ObjectId();
+
+    try {
+        const expired = jwt.verify(token, process.env.JWT_SECRET);
+        if(expired.otp !== otp){
+          return res.status(400).json({message: "Otp expired!"});
+        }
+
+       const {name, email, password} = expired;
+
+       const rootDirid = await db.collection("directories").insertOne({_id:dirId, userId, dirname:"root", parentDirId: null})
+       const newuser = await db.collection("users").insertOne({_id:userId, parentDirId: dirId, username: name, email, password});
+
+      if(rootDirid.acknowledged && newuser.acknowledged){
+          return res.status(200).json("registration successful");
+      }else{
+          return res.status(201).json("unable to register");
+      }
+
+    } catch (error) {
+      next(error);
+      console.log("Error: ", error.message);
+    }
+  
 }
 
 export const SignIn = async(req, res) => {
