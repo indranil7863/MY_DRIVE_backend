@@ -20,8 +20,8 @@ app.use(cookieParser());
 
 app.use(
   cors({
-    origin: "http://localhost:5173",
     // origin: "*",
+    origin: process.env.FRONTEND_URL_DEV,
     credentials: true,
     allowedHeaders: ["Content-Type", "parentdirid", "dirname"],
   }),

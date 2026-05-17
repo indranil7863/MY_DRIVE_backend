@@ -1,6 +1,9 @@
 import { MongoClient } from "mongodb";
+import dotenv from 'dotenv'
+dotenv.config();
 
-const client = new MongoClient("mongodb://localhost:27017/User")
+const db_url = process.env.DATABASE_URL;
+const client = new MongoClient(db_url);
 
 export async function connectDB(){
     await client.connect();
