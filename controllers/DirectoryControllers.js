@@ -54,7 +54,7 @@ export const createDirectory = async (req, res) => {
   }
 
   const newDir = await db.collection("directories").insertOne({_id: new ObjectId(), dirname, parentDirId: new ObjectId(parentdirId) , userId: req.user._id})
-
+    console.log(newDir);
     if(newDir.acknowledged){
        return res.status(200).json({ message: "directory created successfully!" });
     }else{

@@ -1,8 +1,8 @@
 import Razorpay from 'razorpay'
 
 const rzpInstance = new Razorpay({
-    key_id: 'rzp_test_Sr2cbarIzLM6Gv',
-    key_secret: 'K9k6br43XHVhR9NLeH3oML2r'
+    key_id: 'rzp_test_SrVKJg8iTsL1ai',
+    key_secret: 'JvXlJ11DtypDkT8U6LcON0Gw'
 })
 
 export const createOrderId = async (req, res, next) => {
