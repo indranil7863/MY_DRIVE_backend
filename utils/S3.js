@@ -1,4 +1,4 @@
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
+import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import dotenv from 'dotenv'
 dotenv.config();
@@ -25,3 +25,15 @@ export const createUploadSignedUrl = async ({ Key, contentType }) => {
     return url;
 }
 
+export const createGetSignedUrl = async ({ key, download = false, filename }) => {
+    const command = new GetObjectCommand({
+        Bucket: process.env.BUCKET_NAME,
+        Key: key,
+        ResponseContentDisposition: `${download ? "attachment" : "inline"}; filename=${encodeURIComponent(filename)}`
+    })
+
+    const url = await getSignedUrl(s3client, command, {
+        expiresIn: 300
+    })
+    return url;
+}

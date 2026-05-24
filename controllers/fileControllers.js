@@ -3,7 +3,7 @@ import { createWriteStream } from "fs";
 import { rm } from "fs/promises";
 import path from "path";
 import mime from "mime-types";
-import { createUploadSignedUrl } from "../utils/S3.js";
+import { createGetSignedUrl, createUploadSignedUrl } from "../utils/S3.js";
 
 
 export const createFile = async (req, res, next) => {
@@ -103,27 +103,24 @@ export const viewAndDownload = async (req, res, next) => {
 
   try {
     const fileData = await db.collection("files").findOne({ _id: new ObjectId(id), userId: userdata._id })
-    console.log("Fetched data: ", fileData);
+  
+    if (!fileData) return res.status(404).json({ error: "File not found!" })
 
     if (req.query.action === "download") {
-      res.set("Content-Disposition", "attachment");
+      const fileUrl = await createGetSignedUrl({
+        key: `${id}${fileData.extension}`,
+        download: true,
+        filename: fileData.fileName
+      })
+      return res.status(200).json({ url: fileUrl })
     }
     // for view 
+    const fileUrl = await createGetSignedUrl({
+      key: `${id}${fileData.extension}`,
+      filename: fileData.fileName
+    })
 
-    const filetype = mime.lookup(fileData.fileName);
-    console.log("FileType: ", filetype)
-    res.setHeader("Content-Type", filetype);
-    const filePath = path.join(process.cwd(), "storage", `${id}${fileData.extension}`)
-
-    res.sendFile(filePath, (err) => {
-      if (err) {
-        console.log(err)
-      }
-      if (!res.headersSent) {
-        return res.status(404).json({ error: "File not found" })
-      }
-    }
-    );
+    return res.redirect(fileUrl);
   } catch (error) {
     next(error)
     console.log("Error: ", error.message);
@@ -166,7 +163,7 @@ export const uploadInitiate = async (req, res, next) => {
       Key: `${insertedFile.insertedId.toString()}${extension}`,
       contentType: req.body.contentType
     })
-  
+
     res.status(200).json({ uploadSignedUrl, fileId: insertedFile._id });
 
   } catch (error) {
