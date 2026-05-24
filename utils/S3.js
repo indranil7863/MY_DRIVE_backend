@@ -1,0 +1,27 @@
+import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
+import dotenv from 'dotenv'
+dotenv.config();
+
+export const s3client = new S3Client({
+    region: process.env.REGION,
+    credentials: {
+        accessKeyId: process.env.ACCESS_KEY_ID,
+        secretAccessKey: process.env.SECRET_KEY_ID
+    }
+})
+
+export const createUploadSignedUrl = async ({ Key, contentType }) => {
+    const command = new PutObjectCommand({
+        Bucket: process.env.BUCKET_NAME,
+        Key: Key,
+        ContentType: contentType
+    })
+    const url = await getSignedUrl(s3client, command, {
+        expiresIn: 300,
+        signableHeaders: new Set(["content-type"])
+    })
+
+    return url;
+}
+
