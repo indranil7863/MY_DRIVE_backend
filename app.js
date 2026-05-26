@@ -21,7 +21,6 @@ try {
 
   app.use(
     cors({
-      // origin: "*",
       origin: process.env.FRONTEND_URL_DEV,
       credentials: true,
       allowedHeaders: ["Content-Type", "parentdirid", "dirname"],
