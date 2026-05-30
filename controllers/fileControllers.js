@@ -3,7 +3,7 @@ import { createWriteStream } from "fs";
 import { rm } from "fs/promises";
 import path from "path";
 import mime from "mime-types";
-import { createGetSignedUrl, createUploadSignedUrl } from "../utils/S3.js";
+import { createGetSignedUrl, createUploadSignedUrl, deletes3File } from "../utils/S3.js";
 
 
 export const createFile = async (req, res, next) => {
@@ -80,16 +80,16 @@ export const deleteFile = async (req, res, next) => {
   const db = req.db;
   try {
     const filedata = await db.collection("files").findOne({ _id: new ObjectId(id), userId: userdata._id });
-    if (!filedata) return res.status(400).json({ message: "unable to delete file!" });
+    if (!filedata) return res.status(400).json({ message: "File doesn't exists!" });
 
-    await rm(`./storage/${id}${filedata.extension}`);
-    const deleteFile = await db.collection("files").deleteOne({ _id: new ObjectId(id), userId: userdata._id });
+    await deletes3File(`${filedata._id}${filedata.extension}`)
 
-    if (deleteFile) {
-      return res.status(200).json({ message: "File Deleted Successfully" });
+    const deleteFileRes = await db.collection("files").deleteOne({ _id: new ObjectId(id), userId: userdata._id });
+    
+    if (!deleteFileRes || deleteFileRes.deletedCount === 0) {
+      return res.status(400).json({ message: "unable to Deleted file!" });
     }
-
-    return res.status(400).json({ message: "Unable to delete file!" })
+    return res.status(200).json({ message: "file deleted successfully!" })
   } catch (error) {
     next(error);
     console.log("Error: ", error.message);
@@ -103,7 +103,7 @@ export const viewAndDownload = async (req, res, next) => {
 
   try {
     const fileData = await db.collection("files").findOne({ _id: new ObjectId(id), userId: userdata._id })
-  
+
     if (!fileData) return res.status(404).json({ error: "File not found!" })
 
     if (req.query.action === "download") {
@@ -135,7 +135,6 @@ export const uploadInitiate = async (req, res, next) => {
   const filesize = req.body.size;
   const extension = path.extname(filename);
   const fileType = mime.lookup(filename);
-
 
   try {
     const userdata = await db.collection("users").findOne({ _id: new ObjectId(uid) });
