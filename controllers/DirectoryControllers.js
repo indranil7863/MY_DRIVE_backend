@@ -3,10 +3,16 @@ import { rm } from "fs/promises";
 import { ObjectId } from "mongodb";
 import { deletes3Files } from "../utils/S3.js";
 
+const isValidMongoId = (id) => {
+  const regex = /^[a-fA-F0-9]{24}$/;
+  return typeof id === 'string' && regex.test(id);
+};
+
 export const getParentDirData = async (req, res) => {
   // if any id is not send from frontend-> i.e root directory
   const { uid } = req.cookies;
   const db = req.db;
+
 
   if (!req.user.parentDirId) {
     return res.status(201).json({ message: "directory doesn't exist" });
@@ -22,6 +28,8 @@ export const getDirData = async (req, res) => {
   const { id } = req.params;
   const { uid } = req.cookies;
   const db = req.db;
+
+  if(!isValidMongoId(id))return res.status(400).json({message: "id is invalid!"});
 
   const dirData = await db.collection("directories").findOne({ _id: new ObjectId(id) })
 
@@ -55,7 +63,7 @@ export const createDirectory = async (req, res) => {
     }
 
     const newDir = await db.collection("directories").insertOne({ _id: new ObjectId(), dirname, parentDirId: new ObjectId(parentdirId), userId: req.user._id })
-  
+
     if (newDir.acknowledged) {
       return res.status(200).json({ message: "directory created successfully!" });
     } else {
@@ -72,6 +80,8 @@ export const renameDirectory = async (req, res) => {
   const { uid } = req.cookies;
   const db = req.db;
   const newdirname = req.body.newdirname;
+
+  if(!isValidMongoId(id))return res.status(400).json({message: "id is invalid!"});
 
   if (!newdirname) return res.json("success", true);
 
@@ -103,6 +113,8 @@ export const deleteDirectory = async (req, res) => {
   const directoryCollection = db.collection("directories")
   const dirObjId = new ObjectId(id)
 
+  if(!isValidMongoId(id))return res.status(400).json({message: "id is invalid!"});
+
   const directoryData = await directoryCollection.findOne({ _id: dirObjId, userId: req.user._id }, { projection: { _id: 1 } })
   if (!directoryData) {
     return res.status(404).json({ message: "directory not found!" });
@@ -132,4 +144,34 @@ export const deleteDirectory = async (req, res) => {
 
   return res.json({ message: "Directory deleted successfully!" });
 
+}
+
+export const getBreadCrumbData = async (req, res, next) => {
+  const { id } = req.params;
+  const result = [];
+  const db = req.db;
+  const isvalidid = isValidMongoId(id);
+
+  if (!id || !isvalidid) return res.status(400).json({ message: "Not a valid dirid!" });
+  try {
+
+    async function fetchdata(parentdirid) {
+      const dirdata = await db.collection("directories").findOne({ _id: new ObjectId(parentdirid) })
+      if (dirdata) {
+        result.push(dirdata.dirname);
+      }
+
+      if (dirdata && dirdata.parentDirId !== null) {
+        await fetchdata(dirdata.parentDirId);
+      }
+    }
+
+    await fetchdata(id);
+    result.reverse();
+    return res.status(200).json({ result });
+
+  } catch (error) {
+    next(error);
+    console.log("Error: ", error.message);
+  }
 }

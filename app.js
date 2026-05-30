@@ -36,6 +36,8 @@ try {
     console.log(req.body);
   })
 
+
+
   app.get("/", (req, res) => res.json("Hello, from server!"));
   app.use("/directory", CheckAuth, directoryRoutes);
   app.use("/files", CheckAuth, fileRoutes);
