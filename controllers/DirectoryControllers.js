@@ -29,7 +29,7 @@ export const getDirData = async (req, res) => {
   const { uid } = req.cookies;
   const db = req.db;
 
-  if(!isValidMongoId(id))return res.status(400).json({message: "id is invalid!"});
+  if (!isValidMongoId(id)) return res.status(400).json({ message: "id is invalid!" });
 
   const dirData = await db.collection("directories").findOne({ _id: new ObjectId(id) })
 
@@ -62,7 +62,7 @@ export const createDirectory = async (req, res) => {
       return res.status(201).json({ "message": "You can't create this directory!", error: "Unauthorized access!" });
     }
 
-    const newDir = await db.collection("directories").insertOne({ _id: new ObjectId(), dirname, parentDirId: new ObjectId(parentdirId), userId: req.user._id })
+    const newDir = await db.collection("directories").insertOne({ _id: new ObjectId(), dirname, parentDirId: new ObjectId(parentdirId), TotalDirectorySize: 0, userId: req.user._id })
 
     if (newDir.acknowledged) {
       return res.status(200).json({ message: "directory created successfully!" });
@@ -81,7 +81,7 @@ export const renameDirectory = async (req, res) => {
   const db = req.db;
   const newdirname = req.body.newdirname;
 
-  if(!isValidMongoId(id))return res.status(400).json({message: "id is invalid!"});
+  if (!isValidMongoId(id)) return res.status(400).json({ message: "id is invalid!" });
 
   if (!newdirname) return res.json("success", true);
 
@@ -113,7 +113,7 @@ export const deleteDirectory = async (req, res) => {
   const directoryCollection = db.collection("directories")
   const dirObjId = new ObjectId(id)
 
-  if(!isValidMongoId(id))return res.status(400).json({message: "id is invalid!"});
+  if (!isValidMongoId(id)) return res.status(400).json({ message: "id is invalid!" });
 
   const directoryData = await directoryCollection.findOne({ _id: dirObjId, userId: req.user._id }, { projection: { _id: 1 } })
   if (!directoryData) {

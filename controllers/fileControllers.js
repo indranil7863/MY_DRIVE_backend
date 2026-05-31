@@ -4,7 +4,8 @@ import { rm } from "fs/promises";
 import path from "path";
 import mime from "mime-types";
 import { createGetSignedUrl, createUploadSignedUrl, deletes3File } from "../utils/S3.js";
-
+import { incrementFolderSize } from "../utils/incrementFolderSize.js";
+import { decrementFolderSize } from "../utils/decrementFolderSize.js";
 
 export const createFile = async (req, res, next) => {
   const { filename } = req.params;
@@ -85,10 +86,13 @@ export const deleteFile = async (req, res, next) => {
     await deletes3File(`${filedata._id}${filedata.extension}`)
 
     const deleteFileRes = await db.collection("files").deleteOne({ _id: new ObjectId(id), userId: userdata._id });
-    
+
     if (!deleteFileRes || deleteFileRes.deletedCount === 0) {
       return res.status(400).json({ message: "unable to Deleted file!" });
     }
+
+    // if deleted file successful then decrement the parent folder size
+    await decrementFolderSize(db, filedata.fileSize, filedata.parentDirId)
     return res.status(200).json({ message: "file deleted successfully!" })
   } catch (error) {
     next(error);
@@ -145,6 +149,11 @@ export const uploadInitiate = async (req, res, next) => {
       return res.status(404).json({ error: "parent Directory not found!" })
     }
 
+    if (filesize > userdata.TotalUserStorage) {
+      console.log("File size exceeded");
+      return res.json("File size exceeded!")
+    }
+    await incrementFolderSize(db, parentDirId, filesize);
 
     // calculate space before save the file (pending..)
 
