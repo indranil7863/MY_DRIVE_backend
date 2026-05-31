@@ -105,7 +105,13 @@ export const LogOut = (req, res) => {
   res.status(200).json({ message: "logout successful!" });
 }
 
-export const Profile = (req, res) => {
+export const Profile = async (req, res) => {
+  const db = req.db;
 
-  res.status(200).json({ username: req.user.username, email: req.user.email });
+  const userData = await db.collection("users").findOne({ email: req.user.email }, { projection: { password: 0 } });
+  // console.log(userData);
+  const rootDirData = await db.collection("directories").findOne({ _id: userData.parentDirId });
+  // console.log(rootDirData);
+  
+  res.status(200).json({ ...userData, TotalDirectorySize: rootDirData.TotalDirectorySize });
 }
