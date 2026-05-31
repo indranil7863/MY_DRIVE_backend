@@ -2,6 +2,7 @@
 import { rm } from "fs/promises";
 import { ObjectId } from "mongodb";
 import { deletes3Files } from "../utils/S3.js";
+import { decrementDirectorySize, decrementFolderSize } from "../utils/decrementFolderSize.js";
 
 const isValidMongoId = (id) => {
   const regex = /^[a-fA-F0-9]{24}$/;
@@ -115,10 +116,13 @@ export const deleteDirectory = async (req, res) => {
 
   if (!isValidMongoId(id)) return res.status(400).json({ message: "id is invalid!" });
 
-  const directoryData = await directoryCollection.findOne({ _id: dirObjId, userId: req.user._id }, { projection: { _id: 1 } })
+  const directoryData = await directoryCollection.findOne({ _id: dirObjId, userId: req.user._id });
   if (!directoryData) {
     return res.status(404).json({ message: "directory not found!" });
   }
+
+  // we will get the directory size go up to root to update the directory size
+  await decrementDirectorySize(db, directoryData.TotalDirectorySize, id);
 
   async function getDirectoryContents(id) {
     let files = await filesCollection.find({ parentDirId: id }, { projection: { extension: 1 } }).toArray();
