@@ -41,6 +41,32 @@ export const Register = async (req, res, next) => {
   }
 }
 
+export const resendOtp = (req, res, next) => {
+  const { token } = req.cookies;
+  console.log("token: ", token);
+  const expired = jwt.verify(token, process.env.JWT_SECRET);
+
+  const { name, email, password } = expired;
+  // console.log({ name, email, password })
+  const generateOTPandToken = generateOtp(email, name, password);
+  const otp = generateOTPandToken.otp;
+  const token1 = generateOTPandToken.token;
+  // send otp
+  const isEmailSent = sendEmail(email, otp);
+  console.log("new OTP: ", otp);
+  if (!isEmailSent) {
+    throw new Error("Unable to send Email!");
+  }
+  //send token
+  console.log("token1: ", token1);
+  res.cookie("token", token1, {
+    sameSite: "none",
+    httpOnly: true,
+    secure: true
+  })
+  res.status(200).json({ message: "Otp send successfully!" });
+}
+
 export const verifyOtp = async (req, res, next) => {
   const { token } = req.cookies;
   const { otp } = req.body;
@@ -112,6 +138,6 @@ export const Profile = async (req, res) => {
   // console.log(userData);
   const rootDirData = await db.collection("directories").findOne({ _id: userData.parentDirId });
   // console.log(rootDirData);
-  
+
   res.status(200).json({ ...userData, TotalDirectorySize: rootDirData.TotalDirectorySize });
 }

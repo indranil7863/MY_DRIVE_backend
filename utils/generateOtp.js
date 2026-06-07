@@ -10,7 +10,7 @@ export const generateOtp = (email, name, password) =>{
         password,
         otp
     }, process.env.JWT_SECRET, {
-        expiresIn: "1m"
+        expiresIn: "3m"
     })
 
   return {otp, token};

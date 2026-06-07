@@ -107,7 +107,7 @@ export const viewAndDownload = async (req, res, next) => {
 
   try {
     const fileData = await db.collection("files").findOne({ _id: new ObjectId(id), userId: userdata._id })
-
+  
     if (!fileData) return res.status(404).json({ error: "File not found!" })
 
     if (req.query.action === "download") {
